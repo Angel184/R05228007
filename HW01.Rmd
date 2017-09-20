@@ -1,0 +1,10 @@
+---
+title: "R05228007"
+output: html_document
+---
+
+#租屋叢林，何處是窩？
+探討台大學生租屋問題，透過爬蟲591租屋網，蒐集台大周邊租金價格、租屋條件等資料來分析大學生租屋生態，並進一步以視覺化呈現  
+參考資料：http://cpaper-blog.blogspot.tw/2015/05/blog-post_18.html  
+資料來源：https://www.591.com.tw/#
+
