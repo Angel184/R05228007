@@ -1,0 +1,141 @@
+---
+title: "分析年齡、性別及貧富與鐵達尼號乘客的死亡關係"
+author: "R05228007王翊芬、B03801053劉倢如、R06541132林憲瑋"
+output:
+  html_document:
+    toc: yes
+  html_notebook:
+    number_sections: yes
+    toc: yes
+---
+#題目:分析年齡、性別及貧富與鐵達尼號乘客的死亡關係
+資料：鐵達尼乘客資料
+
+#以區段分析
+將資料以分段的方式描述年齡、性別及貧富與鐵達尼號乘客的死亡關係，首先找出四項內部因子，分別為姓名、年齡、票價及存活率進行分析，並將年齡分為三區間(0-20歲)、(20-60歲)、(60-100歲)，及票價分四區間(0-100)、(100-150)、(150-200)、(200-250)　
+
+##讀取資料
+```{r}
+Titanic <- read.csv("data/titanic.csv", header=T, sep=",")
+```
+
+##資料整理
+```{r}
+Titanic <- Titanic[!is.na(Titanic$age)& !is.na(Titanic$fare),] #刪除NA資料
+Titanic <- Titanic[!(Titanic$fare == 9999),] #刪除票價無意義的資料
+
+#將數值資料轉為類別項目
+gender <- factor(Titanic$gender) 
+survival <- factor(Titanic$survival) 
+
+Titanic$fare <- cut(Titanic$fare , c(0,100,150,200,250)) #將票價分區段統計
+Titanic$age <- cut(Titanic$age , c(0,20,60,100)) #將年分區段統計
+```
+
+##敘述統計
+交叉比對各類別項目之間的關係
+
+###性別與年齡之間的關係
+由年齡組成中，可發現年齡介於20-60歲佔最多數(約73%)，而0-20歲間之年輕人次之(約24%)，而在性別角度上分析，可發現整艘船男性多於女性，與看完電影中之想像不一樣，在年齡介於20-60歲之中，男性更是多於女性將近兩倍數量
+```{r}
+table(Titanic$gender,Titanic$age)
+```
+
+###性別與票價之間的關係  
+由性別與票價中，可發現男性具有能力購買票價100以上僅佔3%，而女性為9%，顯示出那年代大多數女性較男性富有
+```{r}
+table(Titanic$gender,Titanic$fare)
+```
+
+###年齡與票價的關係
+由年齡與票價間，票價介於0-100佔大多數(約95%)，也發現有較多能力購買票價高於100者，多介於20-60歲區間內，約佔83%，可享受更高之品質服務
+```{r}
+table(Titanic$age,Titanic$fare)
+```
+
+
+###尋找性別與存活之間的關係
+先前已得知船上之男性人數多於女性人數，而在分析存活人數與性別中可發現，
+就個別分析死亡率中，男性佔82%、女性35%，而存活率男性性佔18%、女性65%，若以總體人數分析，男性死亡率為51%、存活率僅11%女性總體死亡率僅13%，存活率為24%，顯示出女性比起男性能更有機會存活下來
+
+```{r}
+table(Titanic$gender,Titanic$survival)
+```
+
+###尋找年齡與存活之間的關係
+而由年齡與存活率之關係中，年齡介於0-20之死亡率為62%，20-60之死亡率為62%，60-100間之死亡率則為79%，可得知年紀大於60歲者之死亡率較高，但在年齡0-20與20-60間並沒顯著差異
+```{r}
+table(Titanic$age,Titanic$survival)
+```
+
+###票價與存活之間的關係
+由票價及生存率比例可得知，在票價為(200-250)之存活率高達一半以上(57%)，票價(150-200)之存活率為(69%)，(100-150)之票價存活率為(78%)，但票價介於(0-100)中之生存率僅35%，可顯示越富有之條件者，所能獲得生存機率比起貧窮者高(有能力購買票價100以上者僅66人，票價100以下則共有1208人)
+```{r}
+table(Titanic$fare,Titanic$survival)
+```
+
+
+#以連續性的資料分析
+##讀取檔案
+```{r}
+titanic <- read.csv("data/titanic.csv", header=T, sep=",")
+```
+
+##年齡、性別與存活率的關係
+
+###資料清理
+```{r}
+titanic <- titanic[!(titanic$age == 9999 ),] #刪除不具意義的年齡資料
+```
+
+###樞紐分析
+```{r}
+bg_sur <- aggregate(titanic$name,by=list(titanic$age,titanic$survival,titanic$gender),length) #樞紐分析，根據年齡 存活率 及性別計算各類別人數
+bg_sur[1,] #欄位格式跑掉，需重新命名
+```
+
+###資料彙整
+```{r}
+names(bg_sur) <-c("age", "survival", "gender","pops") #重新命名資料欄位
+bg_sur$groups <- paste0(bg_sur$survival,bg_sur$gender) #將存活率以及性別歸類，共分為四類(男存活,男死亡,女存活,女死亡)
+head(bg_sur)
+```
+
+###繪圖
+以圖呈現性別及年齡對於死亡之間的關係，可見男性死亡人數遠高於女性，但在存活人數方面而言，女性則高於男性
+```{r}
+library(ggplot2)
+ggplot(data=bg_sur, aes(x=age, y=pops, group=groups, colour = groups)) + 
+  geom_line()+
+  scale_color_manual(labels = c("男_死亡","女_死亡","男_存活","女_存活"),values=c("#CE1483", "#190113","#3F8FFF","#F4D35E"))+
+  scale_x_continuous(breaks = seq(0,80,10))+
+  xlab("年齡") +
+  ylab("人數") 
+```
+
+##貧富與存活率的關係
+###資料清理
+```{r}
+titanic_f <- titanic[!(titanic$fare ==9999),]#刪除不具意義的船艙票價資料
+```
+
+###樞紐分析
+```{r}
+fare_sur <- aggregate(titanic_f$name,by=list(titanic_f$fare,titanic_f$survival),length)#樞紐分析，根據票價及存活率計算各類別人數
+names(fare_sur) <-c("fare","survival","pops")#重新命名
+fare_sur[1,]
+```
+
+###繪圖
+以圖呈現性別與票價的存活關係，可見存活者多集中在票價100以下
+```{r}
+fare_sur$survival <-factor(fare_sur$survival) #將數值轉為因子
+
+ggplot(data=fare_sur, aes(x=fare, y=pops, group=survival, colour = survival)) + 
+  geom_line()+
+  scale_color_manual(label = c("男","女"), values=c("#CE1483", "#190113"))+
+  scale_x_continuous(breaks = seq(0,550,50))+
+  xlab("票價") +
+  ylab("人數") 
+```
+
